@@ -1,0 +1,31 @@
+# Dev VPS / Mac shared zshrc — chezmoi-managed.
+export EDITOR=nvim
+export VISUAL=nvim
+export PATH="$HOME/.local/bin:$PATH"
+
+# starship
+eval "$(starship init zsh)"
+
+# atuin
+eval "$(atuin init zsh)"
+
+# direnv
+eval "$(direnv hook zsh)"
+
+# mise
+eval "$(mise activate zsh)"
+
+# zoxide
+eval "$(zoxide init zsh)"
+
+# fzf
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Aliases
+alias ls='eza --icons'
+alias ll='eza -la --icons --git'
+alias cat='bat'
+
+# tmprd-dev convenience
+alias dev='mosh tmprd-dev -- tmux new-session -A -s main'
+alias devssh='ssh tmprd-dev'
