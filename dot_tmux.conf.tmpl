@@ -1,0 +1,55 @@
+{{ if eq .chezmoi.os "darwin" }}# tmux config — sane defaults for mobile-attached Claude/Gemini sessions
+# Reattach from phone via: tmux attach -t <name>
+# List sessions: tmux ls
+
+# True color + 256 color support (for Wave/iTerm2/Termius)
+set -g default-terminal "screen-256color"
+set -ga terminal-overrides ",xterm-256color:Tc,*:RGB"
+
+# Mouse on — scroll/select works well on mobile clients
+set -g mouse on
+
+# Long scrollback for AI conversations
+set -g history-limit 50000
+
+# Faster repeats and less escape lag (matters on phone)
+set -sg escape-time 10
+set -g repeat-time 600
+
+# 1-indexed windows + panes (easier to type 1 than 0)
+set -g base-index 1
+setw -g pane-base-index 1
+set -g renumber-windows on
+
+# Vi-style copy mode (matches most editors)
+setw -g mode-keys vi
+
+# Easier splits — keep prefix Ctrl-b, but use intuitive chars
+bind | split-window -h -c "#{pane_current_path}"
+bind - split-window -v -c "#{pane_current_path}"
+unbind '"'
+unbind %
+
+# Reload config quickly
+bind r source-file ~/.tmux.conf \; display "Reloaded ~/.tmux.conf"
+
+# Status bar — minimal, readable on small screens
+set -g status-position bottom
+set -g status-style "bg=default,fg=white"
+set -g status-left  "#[bold] #S #[default] | "
+set -g status-right "#[fg=cyan]#H #[fg=white]| %H:%M"
+set -g status-left-length 30
+set -g status-right-length 50
+
+# Window list — highlight active
+setw -g window-status-current-style "bold,reverse"
+
+# Activity monitoring (useful when phone is detached and a window finishes)
+setw -g monitor-activity on
+set -g visual-activity off
+{{ else }}set -g default-terminal "screen-256color"
+set -ga terminal-overrides ",xterm-256color:Tc"
+set -g mouse on
+set -g history-limit 50000
+set -g status-position top
+{{ end }}

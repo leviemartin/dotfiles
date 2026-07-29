@@ -1,0 +1,122 @@
+{{ if eq .chezmoi.os "darwin" }}# ANTHROPIC_API_KEY intentionally NOT set — Claude Code Remote Control uses
+# claude.ai OAuth (`claude /login`). The previously-commented literal key was
+# removed 2026-07-29 when GitHub push protection caught it during dotfiles
+# templatisation. If raw Anthropic SDK access is ever needed, read it from a
+# secret store at runtime; never inline it here.
+
+# Added by Antigravity
+export PATH="/Users/martinlevie/.antigravity/antigravity/bin:$PATH"
+
+# bun completions
+[ -s "/Users/martinlevie/.bun/_bun" ] && source "/Users/martinlevie/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+. "$HOME/.local/bin/env"
+
+alias claude-mem='/Users/martinlevie/.bun/bin/bun "/Users/martinlevie/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs"'
+
+# Home Assistant CLI
+export HASS_SERVER=http://homeassistant.local:8123
+export HASS_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5MzY3ZjllODQxMDc0MzhkYTEyNTIzOTdiNTQ0MGI4NSIsImlhdCI6MTc3NjU0NTIxOSwiZXhwIjoyMDkxOTA1MjE5fQ.CmybTe2j6lbgOP37-qX-tx-UbTGAMyaq5WUuRTl0s9w
+
+# ---------- Power-user tools (added 2026-05-05) ----------
+
+# mise — multi-runtime version manager (Node, Python, Ruby, Go, etc.)
+command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
+
+# direnv — auto-load .envrc per project
+command -v direnv >/dev/null 2>&1 && eval "$(direnv hook zsh)"
+
+# fzf — fuzzy finder keybindings (Ctrl+T files, Alt+C cd, Ctrl+R history)
+[ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ] && source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
+[ -f /opt/homebrew/opt/fzf/shell/completion.zsh ] && source /opt/homebrew/opt/fzf/shell/completion.zsh
+
+# atuin — better shell history (overrides Ctrl+R, keeps Up arrow as plain history)
+command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh --disable-up-arrow)"
+
+# zoxide — smart cd; `cd somewhere` jumps to known dirs by partial name
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
+
+# Modern unix replacements as friendly aliases (originals stay accessible by full path)
+command -v eza   >/dev/null 2>&1 && { alias ls='eza --git --icons=auto'; alias ll='eza -la --git --icons=auto --time-style=relative'; alias lt='eza --tree --level=2 --icons=auto'; }
+command -v bat   >/dev/null 2>&1 && alias cat='bat --paging=never --plain'
+command -v fd    >/dev/null 2>&1 && alias find='fd'
+command -v dust  >/dev/null 2>&1 && alias du='dust'
+command -v btm   >/dev/null 2>&1 && alias top='btm'
+
+# starship — prompt (last so it sets PROMPT)
+command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
+
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+
+
+# /AI vault navigation (added 2026-05-08 by ai-restructure)
+alias ai="cd /Users/martinlevie/AI"
+cdp() { cd "/Users/martinlevie/AI/projects/$1"; }
+alias cdr="cd /Users/martinlevie/AI/research"
+alias cda="cd /Users/martinlevie/AI/archive"
+
+# tmprd-dev convenience — these existed only in the VPS's Ansible-provisioned
+# .zshrc, where they are useless; they are meant to be run from the Mac.
+alias dev='mosh tmprd-dev -- tmux new-session -A -d -s main \; attach -d -t main'
+alias devssh='ssh tmprd-dev'
+
+# sops + editor (added 2026-05-09 by Phase 1 first-session — pre-Task-1.2 secrets edit)
+export SOPS_AGE_KEY_FILE="$HOME/.config/age/keys.txt"
+export EDITOR=nano   # pico is a symlink to nano on macOS
+
+# Paste Mac clipboard image -> upload to VPS -> copy remote path to clipboard.
+vimg() {
+  local f="clip-$(date +%s).png"
+  pngpaste "/tmp/$f" 2>/dev/null || { echo "no image in clipboard" >&2; return 1; }
+  scp -q "/tmp/$f" martin@tmprd-dev:/home/martin/screenshots/ \
+    || { echo "scp failed" >&2; return 1; }
+  printf "/home/martin/screenshots/%s" "$f" | pbcopy
+  echo "uploaded: /home/martin/screenshots/$f (path on clipboard, Cmd+V to paste)"
+}
+{{ else }}# Dev VPS / Mac shared zshrc — chezmoi-managed.
+export EDITOR=nvim
+export VISUAL=nvim
+export PATH="$HOME/.local/bin:$PATH"
+
+# starship
+eval "$(starship init zsh)"
+
+# atuin
+# atuin ships its PATH shim in ~/.atuin/bin/env, which used to be sourced
+# further down the file — so `atuin init` ran before atuin was on PATH.
+[ -f "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
+eval "$(atuin init zsh)"
+
+# direnv
+eval "$(direnv hook zsh)"
+
+# mise
+eval "$(mise activate zsh)"
+
+# zoxide
+eval "$(zoxide init zsh)"
+
+# fzf
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+# Aliases
+alias ls='eza --icons'
+alias ll='eza -la --icons --git'
+alias cat='bat'
+
+# tmprd-dev convenience
+alias dev='mosh tmprd-dev -- tmux new-session -A -s main'
+alias devssh='ssh tmprd-dev'
+
+# hass-cli (token in ~/.config/hass-cli/env, mode 600, untracked)
+[ -f ~/.config/hass-cli/env ] && source ~/.config/hass-cli/env
+
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+
+# GitHub MCP plugin auth — resolved from gh's own store at shell init, no literal secret
+command -v gh >/dev/null && export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)"
+{{ end }}

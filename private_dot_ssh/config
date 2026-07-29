@@ -1,4 +1,0 @@
-Host home-nas
-    HostName home-nas
-    User Admin_Martin
-    IdentityFile ~/.ssh/id_ed25519

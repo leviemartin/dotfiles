@@ -1,4 +1,24 @@
+{{ if eq .chezmoi.os "darwin" }}[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
 [user]
+	name = leviemartin
+	email = 97828249+leviemartin@users.noreply.github.com
+[core]
+	pager = delta
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true
+	line-numbers = true
+	side-by-side = false
+	syntax-theme = Catppuccin-latte
+	light = true
+[merge]
+	conflictStyle = diff3
+{{ else }}[user]
     name = Martin Levie
     email = leviemartin5@gmail.com
 [core]
@@ -15,3 +35,4 @@
     colorMoved = default
 [init]
     defaultBranch = main
+{{ end }}

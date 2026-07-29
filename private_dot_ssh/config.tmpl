@@ -1,0 +1,18 @@
+{{ if eq .chezmoi.os "darwin" }}
+Host *.railway.internal *.up.railway.app railway-ssh.*
+  StrictHostKeyChecking accept-new
+  UserKnownHostsFile ~/.ssh/known_hosts
+
+Host tmprd-dev
+  User martin
+  StrictHostKeyChecking accept-new
+  # macOS/iTerm2 exports LC_CTYPE=UTF-8, which is not a valid locale name on
+  # Linux. /etc/ssh/ssh_config forwards it via `SendEnv LANG LC_*`, and
+  # mosh-server refuses to start on an unparseable locale — surfacing as the
+  # misleading "Did not find mosh server startup message".
+  SetEnv LC_CTYPE=C.UTF-8
+{{ else }}Host home-nas
+    HostName home-nas
+    User Admin_Martin
+    IdentityFile ~/.ssh/id_ed25519
+{{ end }}
