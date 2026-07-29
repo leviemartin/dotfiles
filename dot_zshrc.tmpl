@@ -1,72 +1,104 @@
-{{ if eq .chezmoi.os "darwin" }}# ANTHROPIC_API_KEY intentionally NOT set — Claude Code Remote Control uses
-# claude.ai OAuth (`claude /login`). The previously-commented literal key was
-# removed 2026-07-29 when GitHub push protection caught it during dotfiles
-# templatisation. If raw Anthropic SDK access is ever needed, read it from a
-# secret store at runtime; never inline it here.
+{{- /*
+Shared zshrc for the Mac and tmprd-dev.
 
+One ordered spine of guarded tool inits that both machines run, with OS blocks
+only where they genuinely differ. Every tool init is guarded with `command -v`,
+so the file is portable — a machine missing a tool skips it rather than erroring
+at shell start.
+
+That guarding is the point. The VPS previously called `eval "$(atuin init zsh)"`
+bare, and when atuin was not yet on PATH every shell start printed
+"command not found: atuin" while history sync silently never initialised.
+
+Flags that differ per machine are small inline conditionals rather than
+duplicated blocks.
+
+SECRETS: never inline one here. This repo is PUBLIC. Runtime-resolved values
+(gh auth token) or mode-600 sourced files (~/.config/hass-cli/env) only.
+*/ -}}
+# Managed by chezmoi — edit the source, not ~/.zshrc.
+# Source: leviemartin/dotfiles -> dot_zshrc.tmpl
+{{ if eq .chezmoi.os "darwin" }}
+# ---------- Mac: PATH from GUI-installed tooling ----------
 # Added by Antigravity
-export PATH="/Users/martinlevie/.antigravity/antigravity/bin:$PATH"
-
-# bun completions
-[ -s "/Users/martinlevie/.bun/_bun" ] && source "/Users/martinlevie/.bun/_bun"
+export PATH="{{ .chezmoi.homeDir }}/.antigravity/antigravity/bin:$PATH"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+{{ end }}
+# ---------- Shared: PATH ----------
+export PATH="$HOME/.local/bin:$PATH"
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
 
-. "$HOME/.local/bin/env"
+# ---------- Editor ----------
+{{ if eq .chezmoi.os "darwin" -}}
+export EDITOR=nano   # pico is a symlink to nano on macOS
+{{- else -}}
+export EDITOR=nvim
+export VISUAL=nvim
+{{- end }}
 
-alias claude-mem='/Users/martinlevie/.bun/bin/bun "/Users/martinlevie/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs"'
-
-# Home Assistant CLI — token lives in ~/.config/hass-cli/env (mode 600,
-# untracked). Never inline it here: this repo is PUBLIC.
-[ -f ~/.config/hass-cli/env ] && source ~/.config/hass-cli/env
-
-# ---------- Power-user tools (added 2026-05-05) ----------
-
-# mise — multi-runtime version manager (Node, Python, Ruby, Go, etc.)
-command -v mise >/dev/null 2>&1 && eval "$(mise activate zsh)"
-
-# direnv — auto-load .envrc per project
+# ---------- Shared: tool inits (guarded; order matters) ----------
+# atuin ships a PATH shim; it MUST be sourced before `atuin init` runs.
+[ -f "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
+{{ if eq .chezmoi.os "darwin" -}}
+command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh --disable-up-arrow)"
+{{- else -}}
+command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh)"
+{{- end }}
+command -v mise   >/dev/null 2>&1 && eval "$(mise activate zsh)"
 command -v direnv >/dev/null 2>&1 && eval "$(direnv hook zsh)"
+{{ if eq .chezmoi.os "darwin" -}}
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
+{{- else -}}
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+{{- end }}
 
-# fzf — fuzzy finder keybindings (Ctrl+T files, Alt+C cd, Ctrl+R history)
+# fzf keybindings — Homebrew path on the Mac, own script on Linux.
+{{ if eq .chezmoi.os "darwin" -}}
 [ -f /opt/homebrew/opt/fzf/shell/key-bindings.zsh ] && source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
 [ -f /opt/homebrew/opt/fzf/shell/completion.zsh ] && source /opt/homebrew/opt/fzf/shell/completion.zsh
+{{- else -}}
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+{{- end }}
 
-# atuin — better shell history (overrides Ctrl+R, keeps Up arrow as plain history)
-command -v atuin >/dev/null 2>&1 && eval "$(atuin init zsh --disable-up-arrow)"
+# ---------- Modern unix replacements ----------
+{{ if eq .chezmoi.os "darwin" -}}
+command -v eza  >/dev/null 2>&1 && { alias ls='eza --git --icons=auto'; alias ll='eza -la --git --icons=auto --time-style=relative'; alias lt='eza --tree --level=2 --icons=auto'; }
+command -v bat  >/dev/null 2>&1 && alias cat='bat --paging=never --plain'
+command -v fd   >/dev/null 2>&1 && alias find='fd'
+command -v dust >/dev/null 2>&1 && alias du='dust'
+command -v btm  >/dev/null 2>&1 && alias top='btm'
+{{- else -}}
+command -v eza >/dev/null 2>&1 && { alias ls='eza --icons'; alias ll='eza -la --icons --git'; }
+command -v bat >/dev/null 2>&1 && alias cat='bat'
+{{- end }}
 
-# zoxide — smart cd; `cd somewhere` jumps to known dirs by partial name
-command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh --cmd cd)"
-
-# Modern unix replacements as friendly aliases (originals stay accessible by full path)
-command -v eza   >/dev/null 2>&1 && { alias ls='eza --git --icons=auto'; alias ll='eza -la --git --icons=auto --time-style=relative'; alias lt='eza --tree --level=2 --icons=auto'; }
-command -v bat   >/dev/null 2>&1 && alias cat='bat --paging=never --plain'
-command -v fd    >/dev/null 2>&1 && alias find='fd'
-command -v dust  >/dev/null 2>&1 && alias du='dust'
-command -v btm   >/dev/null 2>&1 && alias top='btm'
-
-# starship — prompt (last so it sets PROMPT)
-command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
-
-test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
-
-
-# /AI vault navigation (added 2026-05-08 by ai-restructure)
-alias ai="cd /Users/martinlevie/AI"
-cdp() { cd "/Users/martinlevie/AI/projects/$1"; }
-alias cdr="cd /Users/martinlevie/AI/research"
-alias cda="cd /Users/martinlevie/AI/archive"
-
-# tmprd-dev convenience — these existed only in the VPS's Ansible-provisioned
-# .zshrc, where they are useless; they are meant to be run from the Mac.
+# ---------- Shared: tmprd-dev handoff ----------
+# `attach -d` forces a single viewer: with two clients attached tmux sizes every
+# client to the smallest, so a phone would shrink the desktop view.
+# Inert on the VPS itself; kept shared so both machines stay in step.
 alias dev='mosh tmprd-dev -- tmux new-session -A -d -s main \; attach -d -t main'
 alias devssh='ssh tmprd-dev'
 
-# sops + editor (added 2026-05-09 by Phase 1 first-session — pre-Task-1.2 secrets edit)
+# ---------- Shared: secrets, resolved at runtime — never inlined ----------
+# Home Assistant token: mode 600, untracked.
+[ -f ~/.config/hass-cli/env ] && source ~/.config/hass-cli/env
+# GitHub MCP plugin auth, read from gh's own credential store.
+command -v gh >/dev/null 2>&1 && export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)"
+{{ if eq .chezmoi.os "darwin" }}
+# ---------- Mac only ----------
 export SOPS_AGE_KEY_FILE="$HOME/.config/age/keys.txt"
-export EDITOR=nano   # pico is a symlink to nano on macOS
+
+alias claude-mem='$HOME/.bun/bin/bun "$HOME/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs"'
+
+# /AI vault navigation
+alias ai="cd {{ .chezmoi.homeDir }}/AI"
+cdp() { cd "{{ .chezmoi.homeDir }}/AI/projects/$1"; }
+alias cdr="cd {{ .chezmoi.homeDir }}/AI/research"
+alias cda="cd {{ .chezmoi.homeDir }}/AI/archive"
 
 # Paste Mac clipboard image -> upload to VPS -> copy remote path to clipboard.
 vimg() {
@@ -77,46 +109,8 @@ vimg() {
   printf "/home/martin/screenshots/%s" "$f" | pbcopy
   echo "uploaded: /home/martin/screenshots/$f (path on clipboard, Cmd+V to paste)"
 }
-{{ else }}# Dev VPS / Mac shared zshrc — chezmoi-managed.
-export EDITOR=nvim
-export VISUAL=nvim
-export PATH="$HOME/.local/bin:$PATH"
 
-# starship
-eval "$(starship init zsh)"
-
-# atuin
-# atuin ships its PATH shim in ~/.atuin/bin/env, which used to be sourced
-# further down the file — so `atuin init` ran before atuin was on PATH.
-[ -f "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
-eval "$(atuin init zsh)"
-
-# direnv
-eval "$(direnv hook zsh)"
-
-# mise
-eval "$(mise activate zsh)"
-
-# zoxide
-eval "$(zoxide init zsh)"
-
-# fzf
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-# Aliases
-alias ls='eza --icons'
-alias ll='eza -la --icons --git'
-alias cat='bat'
-
-# tmprd-dev convenience
-alias dev='mosh tmprd-dev -- tmux new-session -A -s main'
-alias devssh='ssh tmprd-dev'
-
-# hass-cli (token in ~/.config/hass-cli/env, mode 600, untracked)
-[ -f ~/.config/hass-cli/env ] && source ~/.config/hass-cli/env
-
-[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
-
-# GitHub MCP plugin auth — resolved from gh's own store at shell init, no literal secret
-command -v gh >/dev/null && export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)"
+test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 {{ end }}
+# ---------- Prompt last, so it wins on PROMPT ----------
+command -v starship >/dev/null 2>&1 && eval "$(starship init zsh)"
