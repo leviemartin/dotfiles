@@ -18,9 +18,9 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 alias claude-mem='/Users/martinlevie/.bun/bin/bun "/Users/martinlevie/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs"'
 
-# Home Assistant CLI
-export HASS_SERVER=http://homeassistant.local:8123
-export HASS_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI5MzY3ZjllODQxMDc0MzhkYTEyNTIzOTdiNTQ0MGI4NSIsImlhdCI6MTc3NjU0NTIxOSwiZXhwIjoyMDkxOTA1MjE5fQ.CmybTe2j6lbgOP37-qX-tx-UbTGAMyaq5WUuRTl0s9w
+# Home Assistant CLI — token lives in ~/.config/hass-cli/env (mode 600,
+# untracked). Never inline it here: this repo is PUBLIC.
+[ -f ~/.config/hass-cli/env ] && source ~/.config/hass-cli/env
 
 # ---------- Power-user tools (added 2026-05-05) ----------
 
