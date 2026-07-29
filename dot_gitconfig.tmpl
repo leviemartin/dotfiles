@@ -19,8 +19,8 @@
 [merge]
 	conflictStyle = diff3
 {{ else }}[user]
-    name = Martin Levie
-    email = leviemartin5@gmail.com
+	name = Martin Levie
+	email = leviemartin5@gmail.com
 [core]
     editor = nvim
     pager = delta
@@ -35,4 +35,10 @@
     colorMoved = default
 [init]
     defaultBranch = main
+[credential "https://github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
 {{ end }}
