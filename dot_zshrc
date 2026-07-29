@@ -7,6 +7,9 @@ export PATH="$HOME/.local/bin:$PATH"
 eval "$(starship init zsh)"
 
 # atuin
+# atuin ships its PATH shim in ~/.atuin/bin/env, which used to be sourced
+# further down the file — so `atuin init` ran before atuin was on PATH.
+[ -f "$HOME/.atuin/bin/env" ] && . "$HOME/.atuin/bin/env"
 eval "$(atuin init zsh)"
 
 # direnv
@@ -29,3 +32,11 @@ alias cat='bat'
 # tmprd-dev convenience
 alias dev='mosh tmprd-dev -- tmux new-session -A -s main'
 alias devssh='ssh tmprd-dev'
+
+# hass-cli (token in ~/.config/hass-cli/env, mode 600, untracked)
+[ -f ~/.config/hass-cli/env ] && source ~/.config/hass-cli/env
+
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+
+# GitHub MCP plugin auth — resolved from gh's own store at shell init, no literal secret
+command -v gh >/dev/null && export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token 2>/dev/null)"
